@@ -1,7 +1,8 @@
-from flask import Flask, render_template, redirect, url_for, flash, request
+from flask import Flask, render_template, redirect, url_for, flash, request, session, logging   
 from wtforms import Form, PasswordField, StringField, validators
 from flask_mysqldb import MySQL
 from passlib.hash import sha256_crypt
+from functools import wraps
 
 app = Flask(__name__)
 
@@ -14,7 +15,24 @@ app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 #init MySQL
 mysql = MySQL(app)
 
+#checks whether the user is logged in or not
+def is_logged_in(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if 'logged_in' in session:
+            return f(*args, **kwargs)
+        else:
+            flash('Unauthorized, Please log in', 'danger')
+            return redirect(url_for('login'))
+    return wrap
 
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('You are now logged out', 'success')
+    return redirect(url_for('login'))
+
+@app.route('/')
 @app.route('/home')
 def home():
     return render_template('home.html')
@@ -46,10 +64,82 @@ def register():
 
         return redirect(url_for('login'))
     return render_template('register.html', form=form)
+
+class LoginForm(Form):
+    username = StringField('Username', [validators.Length(min=1, max=30, message="Check yoyr username once again.")])
+    password = PasswordField('Password', [validators.DataRequired(message="Enter password")])
       
-@app.route('/login')
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    return render_template('login.html')
+    form = LoginForm(request.form)
+    if request.method == 'POST' and form.validate():
+        username = form.username.data
+        candidate_password = form.password.data
+
+        cur = mysql.connection.cursor()
+        result = cur.execute("SELECT * FROM users WHERE username= %s", [username])
+        if result>0:
+            data = cur.fetchone()
+            password = data['password']
+
+            if sha256_crypt.verify(candidate_password, password):
+                session['logged_in'] = True
+                session['username'] = username
+                flash('You are now logged in', 'success')
+                return redirect(url_for('home'))
+            else:
+                error = "Password is wrong"
+                return render_template('login.html', error=error)
+            cur.close()
+        else:
+            error = "Username not found. Enter correct username or register"
+            return render_template('login.html', error=error)
+    return render_template('login.html', form=form)
+
+class MessageForm(Form):
+    msgg = StringField('', [validators.Length(min=1, max=300, message="Message must be of length 1 to 300.")])
+
+@app.route('/messages/<string:sender>/<string:receiver>/', methods=['GET', 'POST'])
+@is_logged_in
+def messages(sender,receiver):
+    if session['username'] == sender and (sender != receiver):
+        form = MessageForm(request.form)
+        friend = receiver
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT * FROM  users WHERE username = %s", [sender])
+        sen = cur.fetchone()
+        #sender's id
+        sen_id = sen['id']
+        cur.execute("SELECT * FROM  users WHERE username = %s", [receiver])
+        rec = cur.fetchone()
+        #receiver's id
+        rec_id = rec['id']
+        mysql.connection.commit()
+        cur.close()
+        if request.method == 'POST' and form.validate():
+            msgg = form.msgg.data
+
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO messages(senderid, receiverid, message) VALUES(%s, %s, %s)",(sen_id, rec_id, msgg))
+            mysql.connection.commit()
+            cur.close()
+
+            return redirect(url_for('messages', sender=sender, receiver=receiver))
+
+        cur = mysql.connection.cursor()
+        result = cur.execute("SELECT * FROM messages WHERE (senderid = %s AND receiverid = %s) OR (senderid = %s AND receiverid = %s) ORDER BY message_time ASC", [sen_id, rec_id, rec_id, sen_id])
+        msgs = cur.fetchall()
+
+        if result>0:
+            return render_template('messages.html', msgs=msgs, friend=friend, sen_id=sen_id, rec_id=rec_id, form=form)
+        else:
+            flash('Start a new conversation.', 'info')
+            return render_template('messages.html', friend=friend, form=form)
+        cur.close()
+    else:
+        err = "You can't access this page."
+        return render_template('messages.html', error=err)
+
 if __name__ == '__main__':
     app.secret_key='secret123'
     app.run(debug=True)

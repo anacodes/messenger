@@ -1,0 +1,49 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<div class="container" style="display:flex;justify-content: center; padding: 80px 0px 20px 0px; border-color: black;">
+    {% if friend %}
+    <div class="row" style="background-color: rgb(233, 236, 239); padding: 7px 15px 7px 15px; border-radius: 50px;">
+    <h1>{{ friend }}</h1>
+    </div>
+    {% endif %}
+</div>
+
+    {% if msgs %}
+        {%for part in msgs%}
+            {% if sen_id == part['senderid'] %}
+            <div class="container" style="display: flex; flex-direction: row-reverse;">
+                <div class="row" style="background-color: rgb(233, 236, 239);  padding: 10px 20px 10px 20px; border-radius: 50px; margin:10px;">
+                    {{part.message}}
+                </div>
+            </div>
+            {% else %}
+            <div class="container" style="display: flex; flex-direction: row;">
+                <div class="row" style="background-color: rgb(233, 236, 239);  padding: 10px 20px 10px 20px; border-radius: 50px; margin:10px;">
+                    {{part.message}}
+                </div>
+            </div>
+            {% endif %}           
+        {%endfor%}
+    {% endif %}
+
+   {% if form %}
+   <form method="POST" action="" >
+   <div class="container" style="margin: 50px 50px 70px 50px;">
+       <div class="row">
+           <div class="col-lg-10" style="display:flex; align-items: center;">
+            {% from "includes/_formhelpers.html" import render_field %}
+            {{render_field(form.msgg, class_="form-control", style="background-color:rgb(233,236,239); border-radius: 60px;")}}  
+           </div>
+           <div class="col-lg-1" style="display:flex; align-items: center;">
+                <button id="as" type="submit" class="btn btn btn-dark mb-2" style="color:rgb(233, 236, 239);"><i class="far fa-paper-plane"></i></button>
+           </div>
+       </div>
+   </div>
+   </form>
+
+    {% endif %}
+    {%endblock%}
+
+
+    

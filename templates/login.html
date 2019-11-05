@@ -1,4 +1,18 @@
 {% extends 'layout.html' %}
+
 {% block body %}
-  ASDFGHJKL
+    <div class="jumbotron text-center" style="margin-top:50px;">
+    <h1>Login</h1>
+    {% from "includes/_formhelpers.html" import render_field %}
+    <form method="POST" action="">
+        <div class="form-group">
+            {{render_field(form.username, class_="form-control")}}
+        </div>
+        <div class="form-group">
+            {{render_field(form.password, class_="form-control")}}
+        </div>
+        <button type="submit" class="btn btn-default btn-dark">Submit</button>
+        </div>
+    </form>
+    </div>
 {% endblock %}
