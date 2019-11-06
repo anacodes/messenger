@@ -35,7 +35,7 @@ def logout():
 @app.route('/')
 @app.route('/home')
 def home():
-    return render_template('home.html')
+    return render_template('home.html', user=session['username'])
 
 class RegisterForm(Form):
     firstname = StringField('First Name', [validators.Length(min=1, max=30), validators.DataRequired()])
@@ -131,14 +131,52 @@ def messages(sender,receiver):
         msgs = cur.fetchall()
 
         if result>0:
-            return render_template('messages.html', msgs=msgs, friend=friend, sen_id=sen_id, rec_id=rec_id, form=form)
+            return render_template('messages.html', msgs=msgs, friend=friend, sen_id=sen_id, rec_id=rec_id, form=form, user = session['username'])
         else:
             flash('Start a new conversation.', 'info')
-            return render_template('messages.html', friend=friend, form=form)
+            return render_template('messages.html', friend=friend, form=form, user = session['username'])
         cur.close()
     else:
         err = "You can't access this page."
-        return render_template('messages.html', error=err)
+        return render_template('messages.html', error=err, user = session['username'])
+
+@app.route('/messages/<string:sender>/')
+@is_logged_in
+def allchats(sender):
+    if session['username'] == sender:
+        chats = []
+
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT * FROM users WHERE username = %s", [sender])
+        unique = cur.fetchone()
+        uniqueid = unique['id']
+        #creating list of all ids of chats
+        cur.execute("SELECT * FROM messages WHERE senderid = %s", [uniqueid])
+        chatsa = cur.fetchall()
+        for x in chatsa:
+            chats.append(x['receiverid'])
+        cur.execute("SELECT * FROM messages WHERE receiverid = %s", [uniqueid])
+        chatsb = cur.fetchall()
+        for x in chatsb:
+            chats.append(x['senderid'])
+        chats = list(set(chats))
+        #creating a list of all usernames of chats
+        names= []
+        for chat in chats:
+            cur.execute("SELECT * FROM users WHERE id = %s", [chat])
+            name_a = cur.fetchone()
+            name_b = name_a['username']
+            names.append(name_b)
+        names.sort()
+        l = len(names)
+        if l>0:
+            return render_template('allchats.html', names = names, user = session['username'])
+        flash('You have no chats. Start a new one here.', 'info')
+        return render_template('allchats.html', user = session['username'])#test
+    else:
+        err = "You can't access this page."
+        return render_template('allchats.html', error=err, user = session['username'])
+
 
 if __name__ == '__main__':
     app.secret_key='secret123'
