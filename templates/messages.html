@@ -31,12 +31,14 @@
    <form method="POST" action="" >
    <div class="container" style="margin: 50px 50px 70px 50px;">
        <div class="row">
-           <div class="col-lg-10" style="display:flex; align-items: center;">
+           <!-- <div class="col-lg-10" style="display:flex; align-items: center;"> -->
+                <div style="display:flex; align-items: center; width:80%;">
             {% from "includes/_formhelpers.html" import render_field %}
             {{render_field(form.msgg, class_="form-control", style="background-color:rgb(233,236,239); border-radius: 60px;")}}  
            </div>
-           <div class="col-lg-1" style="display:flex; align-items: center;">
-                <button id="as" type="submit" class="btn btn btn-dark mb-2" style="color:rgb(233, 236, 239);"><i class="far fa-paper-plane"></i></button>
+           <!-- <div class="col-lg-1" style="display:flex; align-items: center;"> -->
+                <div style="display:flex; align-items: center; width:2%;">
+                <button id="last" type="submit" class="btn btn btn-dark mb-2" style="color:rgb(233, 236, 239);"><i class="far fa-paper-plane"></i></button>
            </div>
        </div>
    </div>

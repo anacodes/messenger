@@ -2,7 +2,9 @@
 
 {% block body %}
  <div class="jumbotron text-center" style="margin-top: 100px;">
-     <p>{{ session['username']}}</p>
+    {% if user %} 
+    <p>{{ user }}</p>
+    {% endif %}
      <p>ANAGHA INFO</p>
 
 {{chats}}

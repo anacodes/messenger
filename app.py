@@ -1,3 +1,4 @@
+#!/usr/bin/python
 from flask import Flask, render_template, redirect, url_for, flash, request, session, logging   
 from wtforms import Form, PasswordField, StringField, validators
 from flask_mysqldb import MySQL
@@ -34,8 +35,21 @@ def logout():
 
 @app.route('/')
 @app.route('/home')
+@is_logged_in
 def home():
     return render_template('home.html', user=session['username'])
+
+# @app.route('/')
+# @app.route('/home')
+# # @is_logged_in
+# def home(logg):
+#     if logg:
+#         user = session['username']
+#     else:
+#         user = "ASDF"
+#     return render_template('home.html', user=user)
+
+
 
 class RegisterForm(Form):
     firstname = StringField('First Name', [validators.Length(min=1, max=30), validators.DataRequired()])
@@ -89,11 +103,11 @@ def login():
                 return redirect(url_for('home'))
             else:
                 error = "Password is wrong"
-                return render_template('login.html', error=error)
+                return render_template('login.html', error=error, form=form) #as
             cur.close()
         else:
             error = "Username not found. Enter correct username or register"
-            return render_template('login.html', error=error)
+            return render_template('login.html', error=error, form=form) #as
     return render_template('login.html', form=form)
 
 class MessageForm(Form):
@@ -145,7 +159,7 @@ def messages(sender,receiver):
 def allchats(sender):
     if session['username'] == sender:
         chats = []
-
+        
         cur = mysql.connection.cursor()
         cur.execute("SELECT * FROM users WHERE username = %s", [sender])
         unique = cur.fetchone()
